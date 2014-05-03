@@ -56,39 +56,87 @@ class SpringSolver {
 
 };
 
-class SparseMatrix {
-	public:
-		int dim;
-		double get(int i, int j) {
-			map<int, map<int, double> >::iterator it1 = mtrx.find(i);
-			if(it1 != mtrx.end()){
-				map<int, double>::iterator it2 = (it1->second).find(j);
+void gaussSeidelSolve(vector<vector<double> > a, vector<double> b, vector<double> &solution) {
+	int dim = a.size();
+	solution.assign(dim, 0);
 
-				if(it2 != it1->second.end()){
-					return it2->second;
-				}else{
-					return 0;
-				}
-			}else{
-				return 0;
+	for (int i = 0; i < dim; i++) {
+		double mv = a[i][i];
+		int mj = i;
+
+		//encontrando o maior pivo
+		for (int j = i; j < dim; j++) {
+			if (a[j][i] > mv) {
+				mj = j;
 			}
 		}
 
-		void set(int i, int j, double val){
-			mtrx[i][j] = val;
+		//trocando as linhas
+		if (mj != i) {
+			vector<double> temp = a[i];
+			a[i] = a[mj];
+			a[mj] = temp;
+
+			double temp2 = b[i];
+			b[i] = b[mj];
+			b[mj] = temp2;
 		}
 
-	private:
-		map<int, map<int, double> > mtrx;
-};
+		//eliminação
+		for (int j = i + 1; j < dim; j++) {
+			double alpha = a[i][i] / a[j][i];
 
-void gaussSeidelSolve(SparseMatrix a, map<int, double> b, vector<double> &solution){
-	solution.assign(1, 0);
+			for (int k = i + 1; k < dim; k++) {
+				a[j][k] -= a[i][k] * alpha;
+			}
 
+			b[j] -= b[i] * alpha;
+		}
+	}
 
+	//cálculo da solução
+	for (int i = dim - 1; i >= 0; i--) {
+		solution[i] = b[i];
+
+		for (int j = i; j < dim; j++) {
+			solution[i] -= a[j][i] * solution[j];
+		}
+
+		solution[i] /= a[i][i];
+	}
 }
 
 int main(int argc, char **argv) {
+
+	vector<vector<double> > a(5);
+	vector<double> b(5);
+	vector<double> sol;
+
+	double a1[] =  {3, 7, 9, -1, -100};
+	double a2[] =  {-12, 8, 9, 130};
+	double a3[] =  {41, 8, 9, -9, 0};
+	double a4[] =  {0, 7, 2, 9, 0};
+	double a5[] =  {7, 1, 3, 9, 1};
+
+	a[0].assign(a1, a1 + 5);
+	a[1].assign(a2, a2 + 5);
+	a[2].assign(a3, a3 + 5);
+	a[3].assign(a4, a4 + 5);
+	a[4].assign(a5, a5 + 5);
+
+	b.push_back(-82);
+	b.push_back(135);
+	b.push_back(49);
+	b.push_back(18);
+	b.push_back(21);
+
+	gaussSeidelSolve(a, b, sol);
+
+	for(int i = 0; i < 5; i++){
+		cout << sol[i] << ", ";
+	}
+
+	return 0;
 
 	ifstream file;
 
@@ -118,17 +166,11 @@ int main(int argc, char **argv) {
 		solver.registerSpring(a, b, k);
 	}
 
-	vector<double> sol;
-
-	solver.solve(sol);
 
 	return 0;
 }
 
 bool SpringSolver::solve(vector<double> &solutions) {
-	SparseMatrix a;
-	a.dim = springs.size();
-
 	//Primeiro, as equações de equilíbrio
 
 	return true;
@@ -151,5 +193,4 @@ void SpringSolver::registerSpring(int a, int b, double k) {
 	blocks[a]->springs.push_back(s);
 	blocks[b]->springs.push_back(s);
 }
-
 

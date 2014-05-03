@@ -58,12 +58,11 @@ class SpringSolver {
 };
 
 int main(int argc, char **argv) {
-	string line;
 	ifstream file;
 
 	file.open("in.txt", ifstream::in);
 
-	if(!file.is_open()){
+	if (!file.is_open()) {
 		return 1;
 	}
 
@@ -72,14 +71,14 @@ int main(int argc, char **argv) {
 	int countSprings, countBlocks;
 	file >> countSprings >> countBlocks;
 
-	while(countBlocks--){
+	while (countBlocks--) {
 		float f;
 		cin >> f;
 
 		solver.registerBlock(f);
 	}
 
-	while(countSprings--){
+	while (countSprings--) {
 		int a, b;
 		unsigned float k;
 		cin >> a >> b >> k;
@@ -92,4 +91,22 @@ int main(int argc, char **argv) {
 	solver.solve(sol);
 
 	return 0;
+}
+
+void SpringSolver::registerBlock(float force) {
+	Block *b = new Block();
+	b->force = force;
+
+	blocks.push_back(b);
+}
+
+void SpringSolver::registerSpring(int a, int b, unsigned float k){
+	Spring *s = new Spring();
+
+	s->k = k;
+	s->connectsA = blocks[a];
+	s->connectsB = blocks[b];
+
+	blocks[a]->springs.push_back(s);
+	blocks[b]->springs.push_back(s);
 }

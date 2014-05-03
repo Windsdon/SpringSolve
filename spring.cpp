@@ -10,6 +10,8 @@
 #include <fstream>
 #include <map>
 #include <vector>
+#include <cmath>
+#include <iomanip>
 
 using namespace std;
 
@@ -56,7 +58,7 @@ class SpringSolver {
 
 };
 
-void gaussSeidelSolve(vector<vector<double> > a, vector<double> b, vector<double> &solution) {
+void gaussSeidelSolve(vector<vector<double> > &a, vector<double> &b, vector<double> &solution) {
 	int dim = a.size();
 	solution.assign(dim, 0);
 
@@ -64,10 +66,11 @@ void gaussSeidelSolve(vector<vector<double> > a, vector<double> b, vector<double
 		double mv = a[i][i];
 		int mj = i;
 
-		//encontrando o maior pivo
+		//encontrando o maior pivot
 		for (int j = i; j < dim; j++) {
-			if (a[j][i] > mv) {
+			if (abs(a[j][i]) > mv) {
 				mj = j;
+				mv = abs(a[j][i]);
 			}
 		}
 
@@ -82,25 +85,46 @@ void gaussSeidelSolve(vector<vector<double> > a, vector<double> b, vector<double
 			b[mj] = temp2;
 		}
 
+		cout << "Antes: " << endl;
+		for (int j = 0; j < dim; j++) {
+			for (int k = 0; k < dim; k++) {
+				cout << setw(15) << a[j][k] << " ";
+			}
+			cout << " | " << b[j] << endl;
+		}
+
 		//eliminação
 		for (int j = i + 1; j < dim; j++) {
-			double alpha = a[i][i] / a[j][i];
+			double alpha = a[j][i] / a[i][i];
 
-			for (int k = i + 1; k < dim; k++) {
+			for (int k = i; k < dim; k++) {
 				a[j][k] -= a[i][k] * alpha;
 			}
 
 			b[j] -= b[i] * alpha;
 		}
+
+		cout << "Depois: " << endl;
+		for (int j = 0; j < dim; j++) {
+			for (int k = 0; k < dim; k++) {
+				cout << setw(15) << a[j][k] << " ";
+			}
+			cout << " | " << b[j] << endl;
+		}
 	}
 
+	cout << "====\n";
 	//cálculo da solução
 	for (int i = dim - 1; i >= 0; i--) {
 		solution[i] = b[i];
 
-		for (int j = i; j < dim; j++) {
+		cout << solution[i] << " ";
+
+		for (int j = i + 1; j < dim; j++) {
 			solution[i] -= a[j][i] * solution[j];
 		}
+
+		cout << solution[i] << " " << a[i][i] << endl;
 
 		solution[i] /= a[i][i];
 	}
@@ -109,14 +133,14 @@ void gaussSeidelSolve(vector<vector<double> > a, vector<double> b, vector<double
 int main(int argc, char **argv) {
 
 	vector<vector<double> > a(5);
-	vector<double> b(5);
+	vector<double> b;
 	vector<double> sol;
 
-	double a1[] =  {3, 7, 9, -1, -100};
-	double a2[] =  {-12, 8, 9, 130};
-	double a3[] =  {41, 8, 9, -9, 0};
-	double a4[] =  {0, 7, 2, 9, 0};
-	double a5[] =  {7, 1, 3, 9, 1};
+	double a1[] = { 1, 2, 3, 4, 5 };
+	double a2[] = { 5, 4, 3, 2, 1 };
+	double a3[] = { 1, 1, 1, 1, 1 };
+	double a4[] = { 2, 3, 4, 5, 6 };
+	double a5[] = { 4, 4, 4, 5, 5 };
 
 	a[0].assign(a1, a1 + 5);
 	a[1].assign(a2, a2 + 5);
@@ -124,15 +148,15 @@ int main(int argc, char **argv) {
 	a[3].assign(a4, a4 + 5);
 	a[4].assign(a5, a5 + 5);
 
-	b.push_back(-82);
-	b.push_back(135);
-	b.push_back(49);
-	b.push_back(18);
-	b.push_back(21);
+	b.push_back(15);
+	b.push_back(15);
+	b.push_back(5);
+	b.push_back(20);
+	b.push_back(22);
 
 	gaussSeidelSolve(a, b, sol);
 
-	for(int i = 0; i < 5; i++){
+	for (int i = 0; i < 5; i++) {
 		cout << sol[i] << ", ";
 	}
 
@@ -165,7 +189,6 @@ int main(int argc, char **argv) {
 
 		solver.registerSpring(a, b, k);
 	}
-
 
 	return 0;
 }

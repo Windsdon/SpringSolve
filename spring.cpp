@@ -85,14 +85,6 @@ void gaussSeidelSolve(vector<vector<double> > &a, vector<double> &b, vector<doub
 			b[mj] = temp2;
 		}
 
-		cout << "Antes: " << endl;
-		for (int j = 0; j < dim; j++) {
-			for (int k = 0; k < dim; k++) {
-				cout << setw(15) << a[j][k] << " ";
-			}
-			cout << " | " << b[j] << endl;
-		}
-
 		//eliminação
 		for (int j = i + 1; j < dim; j++) {
 			double alpha = a[j][i] / a[i][i];
@@ -103,28 +95,15 @@ void gaussSeidelSolve(vector<vector<double> > &a, vector<double> &b, vector<doub
 
 			b[j] -= b[i] * alpha;
 		}
-
-		cout << "Depois: " << endl;
-		for (int j = 0; j < dim; j++) {
-			for (int k = 0; k < dim; k++) {
-				cout << setw(15) << a[j][k] << " ";
-			}
-			cout << " | " << b[j] << endl;
-		}
 	}
 
-	cout << "====\n";
 	//cálculo da solução
 	for (int i = dim - 1; i >= 0; i--) {
 		solution[i] = b[i];
 
-		cout << solution[i] << " ";
-
 		for (int j = i + 1; j < dim; j++) {
-			solution[i] -= a[j][i] * solution[j];
+			solution[i] -= a[i][j] * solution[j];
 		}
-
-		cout << solution[i] << " " << a[i][i] << endl;
 
 		solution[i] /= a[i][i];
 	}
@@ -132,31 +111,25 @@ void gaussSeidelSolve(vector<vector<double> > &a, vector<double> &b, vector<doub
 
 int main(int argc, char **argv) {
 
-	vector<vector<double> > a(5);
+	vector<vector<double> > a(3);
 	vector<double> b;
 	vector<double> sol;
 
-	double a1[] = { 1, 2, 3, 4, 5 };
-	double a2[] = { 5, 4, 3, 2, 1 };
-	double a3[] = { 1, 1, 1, 1, 1 };
-	double a4[] = { 2, 3, 4, 5, 6 };
-	double a5[] = { 4, 4, 4, 5, 5 };
+	double a1[] = { 1, 1, 1 };
+	double a2[] = { 1, 2, 3 };
+	double a3[] = { 4, 5, 9 };
 
 	a[0].assign(a1, a1 + 5);
 	a[1].assign(a2, a2 + 5);
 	a[2].assign(a3, a3 + 5);
-	a[3].assign(a4, a4 + 5);
-	a[4].assign(a5, a5 + 5);
 
-	b.push_back(15);
-	b.push_back(15);
-	b.push_back(5);
-	b.push_back(20);
-	b.push_back(22);
+	b.push_back(3);
+	b.push_back(6);
+	b.push_back(18);
 
 	gaussSeidelSolve(a, b, sol);
 
-	for (int i = 0; i < 5; i++) {
+	for (int i = 0; i < 3; i++) {
 		cout << sol[i] << ", ";
 	}
 

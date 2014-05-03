@@ -11,7 +11,7 @@ O programa lê de um arquivo chamado *in.txt* no diretório de execução. Este arqu
 
 ```
 n m //número de molas, blocos
-xa xb k //para cada mola, os dois blocos na qual está conectada, seguido pela constante elástica, int int (unsigned float)
 f //para cada bloco, a soma das forças externas que agem nele (signed float)
+xa xb k //para cada mola, os dois blocos na qual está conectada, seguido pela constante elástica, int int (unsigned float)
 ```
 

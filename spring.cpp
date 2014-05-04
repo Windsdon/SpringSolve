@@ -12,6 +12,8 @@
 #include <vector>
 #include <cmath>
 #include <iomanip>
+#include <sstream>
+#include <stack>
 
 using namespace std;
 
@@ -21,12 +23,16 @@ struct Spring {
 		Block *connectsA;
 		Block *connectsB;
 
+		int id;
+
 		double k;
 };
 
 struct Block {
 	public:
 		vector<Spring*> springs;
+
+		int id;
 
 		double force;
 };
@@ -52,13 +58,31 @@ class SpringSolver {
 		 */
 		bool solve(vector<double> &solutions);
 
+		/**
+		 * rel: Relação das molas
+		 */
+		void registerRelation(const string &rel);
+
 	private:
 		vector<Spring*> springs;
 		vector<Block*> blocks;
+		vector<string> relations;
+
+		bool isOperator(char c);
+		bool makeRelation(const string &e, vector<vector<double> > &rel);
 
 };
 
-void gauss(vector<vector<double> > a, vector<double> b, vector<double> &solution) {
+class CompoundGroup {
+	public:
+		vector<int> springs;
+
+		void operator=(CompoundGroup& other) {
+			springs = other.springs;
+		}
+};
+
+bool gauss(vector<vector<double> > a, vector<double> b, vector<double> &solution) {
 	int dim = a.size();
 	solution.assign(dim, 0);
 
@@ -107,11 +131,13 @@ void gauss(vector<vector<double> > a, vector<double> b, vector<double> &solution
 
 		solution[i] /= a[i][i];
 	}
+
+	return true;
 }
 template<typename T>
 void vectorPrint(const vector<T> &v) {
 	for (int i = 0; i < v.size(); i++) {
-		cout << "v[" << setw(2) << i << "] = " << v[i] << ";\n";
+		cout << "x[" << setw(2) << i << "] = " << v[i] << ";\n";
 	}
 }
 
@@ -119,12 +145,12 @@ bool gaussSeidel(vector<vector<double> > a, vector<double> b, vector<double> &so
 	int dim = b.size();
 	double maxE = 0.001;
 
-	solution.assign(dim, 0);
+	solution.assign(dim, 1);
 
-	for(int i = 0; i < dim; i++){
+	for (int i = 0; i < dim; i++) {
 		double d = a[i][i];
 		b[i] /= d;
-		for(int j = 0; j < dim; j++){
+		for (int j = 0; j < dim; j++) {
 			a[i][j] = a[i][j] / d;
 		}
 	}
@@ -153,6 +179,7 @@ bool gaussSeidel(vector<vector<double> > a, vector<double> b, vector<double> &so
 				e = ek;
 			}
 		}
+
 	} while (e > maxE && maxIter--);
 
 	if (maxIter >= 0) {
@@ -165,43 +192,12 @@ bool gaussSeidel(vector<vector<double> > a, vector<double> b, vector<double> &so
 
 int main(int argc, char **argv) {
 
-	vector<vector<double> > a(3);
-	vector<double> b;
-	vector<double> sol;
-
-	double a1[] = { 5, 1, -10 };
-	double a2[] = { 3, 4, 1 };
-	double a3[] = { 3, 3, 6 };
-
-	a[0].assign(a1, a1 + 5);
-	a[1].assign(a2, a2 + 5);
-	a[2].assign(a3, a3 + 5);
-
-	b.push_back(5);
-	b.push_back(6);
-	b.push_back(0);
-
-	gauss(a, b, sol);
-
-	for (int i = 0; i < 3; i++) {
-		cout << sol[i] << ", ";
-	}
-
-	cout << "\nGauss Seidel" << endl;
-
-	gaussSeidel(a, b, sol);
-
-	for (int i = 0; i < 3; i++) {
-		cout << sol[i] << ", ";
-	}
-
-	return 0;
-
 	ifstream file;
 
 	file.open("in.txt", ifstream::in);
 
 	if (!file.is_open()) {
+		cout << "Could not open file" << endl;
 		return 1;
 	}
 
@@ -212,7 +208,7 @@ int main(int argc, char **argv) {
 
 	while (countBlocks--) {
 		double f;
-		cin >> f;
+		file >> f;
 
 		solver.registerBlock(f);
 	}
@@ -220,23 +216,95 @@ int main(int argc, char **argv) {
 	while (countSprings--) {
 		int a, b;
 		double k;
-		cin >> a >> b >> k;
+		file >> a >> b >> k;
 
 		solver.registerSpring(a, b, k);
 	}
+
+	int c;
+
+	file >> c;
+
+	string temp;
+	getline(file, temp); //para limpar o \n
+
+	while (c--) {
+		string str;
+		getline(file, str);
+		solver.registerRelation(str);
+	}
+
+	vector<double> sol;
+
+	if (!solver.solve(sol)) {
+		cout << "Não converge!" << endl;
+	}
+
+	vectorPrint(sol);
 
 	return 0;
 }
 
 bool SpringSolver::solve(vector<double> &solutions) {
-	//Primeiro, as equações de equilíbrio
 
-	return true;
+	vector<vector<double> > a;
+	vector<double> b;
+
+	unsigned int dim = springs.size();
+
+	//Primeiro, as equações de equilíbrio dos blocos
+	for (unsigned int i = 0; i < blocks.size(); i++) {
+		Block *block = blocks[i];
+		vector<Spring*> &bsprings = block->springs;
+
+		vector<double> eq(dim, 0);
+
+		for (unsigned int j = 0; j < bsprings.size(); j++) {
+			Spring *s = bsprings[j];
+
+			if (s->connectsA == block) { //conecta por baixo
+				eq[s->id] = -s->k;
+			} else { //conecta por cima
+				eq[s->id] = s->k;
+			}
+		}
+
+		//adiciona a equação ao sistema
+		a.push_back(eq);
+		b.push_back(-block->force);
+	}
+
+	//ler relações
+	for (unsigned int i = 0; i < relations.size(); i++) {
+		vector<vector<double> > rel;
+		makeRelation(relations[i], rel);
+
+		for (unsigned int j = 0; j < rel.size(); j++) {
+			a.push_back(rel[j]); //colocar no sistema
+			b.push_back(0);
+		}
+	}
+
+	if (a.size() != dim) {
+		cout << "Poucas equações!" << endl;
+		return false;
+	} else {
+		cout << "Sistema: " << endl;
+		for (unsigned int i = 0; i < dim; i++) {
+			for (unsigned int j = 0; j < dim; j++) {
+				cout << setw(5) << a[i][j] << " ";
+			}
+			cout << " | " << b[i] << endl;
+		}
+	}
+
+	return gauss(a, b, solutions);
 }
 
 void SpringSolver::registerBlock(double force) {
 	Block *b = new Block();
 	b->force = force;
+	b->id = blocks.size();
 
 	blocks.push_back(b);
 }
@@ -245,10 +313,119 @@ void SpringSolver::registerSpring(int a, int b, double k) {
 	Spring *s = new Spring();
 
 	s->k = k;
-	s->connectsA = blocks[a];
-	s->connectsB = blocks[b];
+	if (a >= 0) {
+		s->connectsA = blocks[a];
+		blocks[a]->springs.push_back(s);
+	} else {
+		s->connectsA = 0;
+	}
+	if (b >= 0) {
+		s->connectsB = blocks[b];
+		blocks[b]->springs.push_back(s);
+	} else {
+		s->connectsB = 0;
+	}
+	s->id = springs.size();
 
-	blocks[a]->springs.push_back(s);
-	blocks[b]->springs.push_back(s);
+	springs.push_back(s);
+}
+
+void SpringSolver::registerRelation(const string &rel) {
+	relations.push_back(rel);
+}
+
+bool SpringSolver::isOperator(char c) {
+	switch (c) {
+		case '+':
+		case '=':
+			return true;
+	}
+
+	return false;
+}
+
+bool SpringSolver::makeRelation(const string &e, vector<vector<double> > &rel) {
+	int dim = springs.size();
+
+	stringstream str(e);
+	string s;
+	stack<CompoundGroup> g;
+	stack<int> sp;
+	int num;
+	str >> num;
+	while (str >> s) {
+		if (isOperator(s[0])) {
+			switch (s[0]) {
+				case '+': {
+					if (sp.empty()) {
+						cout << "Operacao invalida no stack!" << endl;
+						cout << "Durante operação + em " << s << endl;
+						return false;
+					}
+
+					CompoundGroup cg;
+
+					while (!sp.empty()) {
+						cg.springs.push_back(sp.top());
+						sp.pop();
+					}
+
+					g.push(cg);
+					break;
+				}
+
+				case '=': {
+					//cria uma equação
+
+					if (!sp.empty()) {
+						//grupo não criado
+						CompoundGroup cg;
+
+						while (!sp.empty()) {
+							cg.springs.push_back(sp.top());
+							sp.pop();
+						}
+
+						g.push(cg);
+					}
+
+					//usamos a - b = 0
+					CompoundGroup a = g.top();
+					g.pop();
+					CompoundGroup b = g.top();
+
+					g.push(a); //retornando a ao stack
+
+					vector<double> v(dim, 0);
+
+					for (unsigned int i = 0; i < a.springs.size(); i++) {
+						Spring *s = springs[a.springs[i]];
+						v[s->id] = 1;
+					}
+
+					for (unsigned int i = 0; i < b.springs.size(); i++) {
+						Spring *s = springs[b.springs[i]];
+						v[s->id] = -1;
+					}
+
+					rel.push_back(v);
+
+					break;
+				}
+
+				default:
+					return false;
+
+			}
+		} else {
+			int n;
+			stringstream(s) >> n;
+
+			sp.push(n);
+		}
+	}
+
+	return true;
+
 }
 

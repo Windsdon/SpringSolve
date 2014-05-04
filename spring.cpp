@@ -58,7 +58,7 @@ class SpringSolver {
 
 };
 
-void gaussSeidelSolve(vector<vector<double> > &a, vector<double> &b, vector<double> &solution) {
+void gauss(vector<vector<double> > a, vector<double> b, vector<double> &solution) {
 	int dim = a.size();
 	solution.assign(dim, 0);
 
@@ -89,7 +89,7 @@ void gaussSeidelSolve(vector<vector<double> > &a, vector<double> &b, vector<doub
 		for (int j = i + 1; j < dim; j++) {
 			double alpha = a[j][i] / a[i][i];
 
-			for (int k = i; k < dim; k++) {
+			for (int k = i + 1; k < dim; k++) {
 				a[j][k] -= a[i][k] * alpha;
 			}
 
@@ -108,6 +108,60 @@ void gaussSeidelSolve(vector<vector<double> > &a, vector<double> &b, vector<doub
 		solution[i] /= a[i][i];
 	}
 }
+template<typename T>
+void vectorPrint(const vector<T> &v) {
+	for (int i = 0; i < v.size(); i++) {
+		cout << "v[" << setw(2) << i << "] = " << v[i] << ";\n";
+	}
+}
+
+bool gaussSeidel(vector<vector<double> > a, vector<double> b, vector<double> &solution) {
+	int dim = b.size();
+	double maxE = 0.001;
+
+	solution.assign(dim, 0);
+
+	for(int i = 0; i < dim; i++){
+		double d = a[i][i];
+		b[i] /= d;
+		for(int j = 0; j < dim; j++){
+			a[i][j] = a[i][j] / d;
+		}
+	}
+
+	double e = -1;
+	int maxIter = 100;
+	do {
+		for (int i = 0; i < dim; i++) {
+			double prev = solution[i];
+			solution[i] = b[i];
+			for (int j = 0; j < dim; j++) {
+				if (j == i) {
+					continue;
+				}
+				solution[i] -= a[i][j] * solution[j];
+			}
+
+			double ek;
+			if (solution[i] == 0) {
+				ek = prev - solution[i];
+			} else {
+				ek = abs((prev - solution[i]) / solution[i]);
+			}
+
+			if (!i || ek > e) {
+				e = ek;
+			}
+		}
+	} while (e > maxE && maxIter--);
+
+	if (maxIter >= 0) {
+		return true;
+	} else {
+		return false;
+	}
+
+}
 
 int main(int argc, char **argv) {
 
@@ -115,19 +169,27 @@ int main(int argc, char **argv) {
 	vector<double> b;
 	vector<double> sol;
 
-	double a1[] = { 1, 1, 1 };
-	double a2[] = { 1, 2, 3 };
-	double a3[] = { 4, 5, 9 };
+	double a1[] = { 5, 1, -10 };
+	double a2[] = { 3, 4, 1 };
+	double a3[] = { 3, 3, 6 };
 
 	a[0].assign(a1, a1 + 5);
 	a[1].assign(a2, a2 + 5);
 	a[2].assign(a3, a3 + 5);
 
-	b.push_back(3);
+	b.push_back(5);
 	b.push_back(6);
-	b.push_back(18);
+	b.push_back(0);
 
-	gaussSeidelSolve(a, b, sol);
+	gauss(a, b, sol);
+
+	for (int i = 0; i < 3; i++) {
+		cout << sol[i] << ", ";
+	}
+
+	cout << "\nGauss Seidel" << endl;
+
+	gaussSeidel(a, b, sol);
 
 	for (int i = 0; i < 3; i++) {
 		cout << sol[i] << ", ";

@@ -11,7 +11,11 @@ O programa lê de um arquivo chamado *in.txt* no diretório de execução. Este arqu
 
 ```
 n m //número de molas, blocos
-f //para cada bloco, a soma das forças externas que agem nele (signed float)
-xa xb k //para cada mola, os dois blocos na qual está conectada, seguido pela constante elástica, int int (unsigned float)
+f //para cada bloco, a soma das forças externas que agem nele - float
+xa xb k //para cada mola, os dois blocos na qual está conectada, seguido pela constante elástica, - int int float
+        //uma mola sempre conecta-se por cima em um bloco e por baixo em outro. xa é por baixo, xb é por cima
+c //número de relações
+b [mixed]  //relações: b é o número de molas involvidas. [mixed] representa as relações
+  //4 1 2 + 3 = 4 = : indica que são 4 molas, x1 + x2 = x3 = x4 
 ```
 
